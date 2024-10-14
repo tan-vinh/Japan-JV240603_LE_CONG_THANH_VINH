@@ -13,6 +13,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import javax.servlet.ServletContext;
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 @Controller
@@ -42,8 +45,14 @@ public class ProductController {
     @PostMapping("/add")
     public String addProduct(@ModelAttribute("product") Product product, @RequestParam("imgFile") MultipartFile file) {
         String fileName = file.getOriginalFilename();
-        String path = servletContext.getRealPath("/uploads/");
+        String path = servletContext.getRealPath("/uploads");
         File fileDir = new File(path + "/" + fileName);
+        try {
+            Files.write(fileDir.toPath(),file.getBytes(), StandardOpenOption.CREATE);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        product.setImage(fileName);
         if (productService.addProduct(product)) {
             return "redirect:/product";
         }
@@ -52,7 +61,7 @@ public class ProductController {
     }
 
     @GetMapping("/edit/{id}")
-    public String editCategory(@PathVariable("id") int id, Model model) {
+    public String editProduct(@PathVariable("id") int id, Model model) {
         Product product = productService.getProductById(id);
         model.addAttribute("product", product);
         return "product/edit";
@@ -67,8 +76,8 @@ public class ProductController {
     }
 
     @GetMapping("/delete/{id}")
-    public String deleteCategory(@PathVariable("id") int id) {
-        categoryService.deleteCategory(id);
-        return "redirect:/category";
+    public String deleteProduct(@PathVariable("id") int id) {
+        productService.deleteProduct(id);
+        return "redirect:/product";
     }
 }
